@@ -2521,6 +2521,31 @@ define([
 
             passState.framebuffer = originalFramebuffer;
         }
+
+        // <LIVE_EARTH>
+        // Allow direct rendering of drawing groups outside of frustum/pass system
+
+        // This is copied from above at the beginning of the function, just resetting
+        // the frustum to include the whole scene instead of using the nearest which
+        // may clip.
+        if (defined(camera.frustum.fov)) {
+            frustum = camera.frustum.clone(scratchPerspectiveFrustum);
+        } else if (defined(camera.frustum.infiniteProjectionMatrix)){
+            frustum = camera.frustum.clone(scratchPerspectiveOffCenterFrustum);
+        } else if (defined(camera.frustum.width)) {
+            frustum = camera.frustum.clone(scratchOrthographicFrustum);
+        } else {
+            frustum = camera.frustum.clone(scratchOrthographicOffCenterFrustum);
+        }
+
+        // Ideally, we would render the sky box and atmosphere last for
+        // early-z, but we would have to draw it in each frustum
+        frustum.near = camera.frustum.near;
+        frustum.far = camera.frustum.far;
+        us.updateFrustum(frustum);
+
+        Scene.executeCommandsLate(scene, passState);
+        // </LIVE_EARTH>
     }
 
     function executeComputeCommands(scene) {
@@ -3979,6 +4004,10 @@ define([
 
         return destroyObject(this);
     };
+
+    // <LIVE_EARTH>
+   Scene.executeCommandsLate = function(scene, passState) {};
+   // </LIVE_EARTH>
 
     return Scene;
 });
